@@ -23,6 +23,7 @@ add_executable(Image_resizer_PP_Lab2
 
 target_include_directories(Image_resizer_PP_Lab2 PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/stb
 )
 
 # Warnings (adjust if you use MSVC/MinGW/Clang)
