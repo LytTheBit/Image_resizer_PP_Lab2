@@ -1,0 +1,8 @@
+//
+// Created by Utente on 07/02/2026.
+//
+
+#ifndef IMAGE_RESIZER_PP_LAB2_TIMING_HPP
+#define IMAGE_RESIZER_PP_LAB2_TIMING_HPP
+
+#endif //IMAGE_RESIZER_PP_LAB2_TIMING_HPP
