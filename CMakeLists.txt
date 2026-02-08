@@ -26,6 +26,7 @@ target_include_directories(Image_resizer_PP_Lab2 PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/third_party/stb
 )
 
+
 # Warnings (adjust if you use MSVC/MinGW/Clang)
 if (MSVC)
     target_compile_options(Image_resizer_PP_Lab2 PRIVATE /W4)

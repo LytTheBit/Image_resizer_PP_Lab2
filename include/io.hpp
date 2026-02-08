@@ -1,10 +1,8 @@
 // io.hpp
 // Created by Francesco on 07/02/2026.
 //
-// Image I/O interface.
-// Provides functions to load and save common image formats (PNG/JPG/BMP/TGA).
-// The implementation is based on stb_image/stb_image_write and converts data
-// into the project's Image structure (contiguous row-major layout).
+// Image I/O interface using stb_image / stb_image_write.
+// Loads images into the project Image structure and saves PNG/JPG outputs.
 #pragma once
 
 #include <string>

@@ -19,9 +19,6 @@ static inline float map_coord(float out_coord, float in_size, float out_size) {
 static Image resize_nearest(const Image& in, int out_w, int out_h) {
     Image out(out_w, out_h, in.channels);
 
-    const float sx_scale = static_cast<float>(in.width)  / static_cast<float>(out_w);
-    const float sy_scale = static_cast<float>(in.height) / static_cast<float>(out_h);
-
     for (int y = 0; y < out_h; ++y) {
         const float sy = map_coord(static_cast<float>(y), static_cast<float>(in.height), static_cast<float>(out_h));
         int iy = static_cast<int>(std::lround(sy));
