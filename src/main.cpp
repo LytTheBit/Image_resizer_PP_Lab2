@@ -6,6 +6,7 @@
 // This file is intentionally small: I/O, benchmarking and resize logic are in dedicated modules.
 #include <iostream>
 #include <exception>
+#include <filesystem>
 
 #include "cli.hpp"
 #include "io.hpp"
@@ -15,6 +16,42 @@
 
 int main(int argc, char** argv) {
     try {
+        // Convenience default: if no CLI args are provided, run a local smoke test.
+        // This avoids dealing with IDE run configurations.
+        if (argc == 1) {
+            const std::string input  = "test_1.png";  // expected in working directory
+            const std::string output = "out.png";
+
+            if (!std::filesystem::exists(input)) {
+                std::cerr
+                    << "ERROR: no arguments provided and default input file not found.\n"
+                    << "Searched for: " << std::filesystem::absolute(input).string() << "\n\n";
+                print_usage(std::cerr);
+                return 2;
+            }
+
+            // Default parameters for a quick test
+            const int out_w = 1920;
+            const int out_h = 1080;
+            const ResizeMethod method = ResizeMethod::Bilinear;
+            const Backend backend = Backend::OpenMP;
+            const int threads = 12; // set 0 to let OpenMP decide
+
+            Image img = load_image(input, 0);
+            Image out = resize(img, out_w, out_h, method, backend, threads);
+
+            // Choose output writer based on extension
+            if (ends_with_icase(output, ".jpg") || ends_with_icase(output, ".jpeg")) {
+                save_jpg(out, output, cfg::default_jpg_quality);
+            } else {
+                save_png(out, output, cfg::default_png_compression);
+            }
+
+            std::cout << "OK (default run): " << input << " -> " << output
+                      << " (" << out.width << "x" << out.height << "x" << out.channels << ")\n";
+            return 0;
+        }
+
         const CliOptions opt = parse_cli(argc, argv);
 
         if (opt.mode == RunMode::Help) {
