@@ -19,6 +19,8 @@ add_executable(Image_resizer_PP_Lab2
         src/benchmark.cpp
         src/util.cpp
         src/cli.cpp
+        include/validate.hpp
+        src/validate.cpp
 )
 
 target_include_directories(Image_resizer_PP_Lab2 PRIVATE
