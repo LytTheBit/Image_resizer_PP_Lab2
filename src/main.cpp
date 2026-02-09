@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
             }
 
             // Default parameters for a quick test
-            const int out_w = 1920;
-            const int out_h = 1080;
+            const int out_w = 896;
+            const int out_h = 896;
             const ResizeMethod method = ResizeMethod::Bilinear;
             const Backend backend = Backend::OpenMP;
             const int threads = 12; // set 0 to let OpenMP decide
