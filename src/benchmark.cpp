@@ -67,7 +67,7 @@ BenchResult benchmark_resize(
     BenchResult r{};
     r.runs = runs;
     r.mean_ms   = mean(samples);
-    r.stddev_ms = stddev(samples, r.mean_ms);
+    r.stddev_ms = stddev_sample(samples, r.mean_ms);
     r.min_ms    = *std::min_element(samples.begin(), samples.end());
     r.max_ms    = *std::max_element(samples.begin(), samples.end());
 
