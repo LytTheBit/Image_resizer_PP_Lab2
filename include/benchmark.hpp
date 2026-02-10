@@ -12,6 +12,7 @@
 #include "image.hpp"
 #include "resize.hpp"
 
+// Data structure to hold benchmark results.
 struct BenchResult {
     int runs = 0;
     double mean_ms = 0.0;
@@ -20,15 +21,18 @@ struct BenchResult {
     double max_ms = 0.0;
 };
 
+// Run a benchmark of the resize function with the given parameters.
 BenchResult benchmark_resize(
-    const Image& input,
+    const Image& img,
     int out_w, int out_h,
     ResizeMethod method,
     Backend backend,
     int threads,
-    int warmup_runs,
-    int measured_runs
+    int warmup,
+    int runs,
+    int inner_reps = 1   // default per compatibilità
 );
+
 
 void append_csv_row(
     const std::string& csv_path,

@@ -17,45 +17,115 @@
 #include "util.hpp"
 #include "validate.hpp"
 
-static int clamp_int(int v, int lo, int hi) {
-    return std::max(lo, std::min(v, hi));
-}
-
 int main(int argc, char** argv) {
     try {
         // Convenience default: if no CLI args are provided, run a local smoke test.
         // This avoids dealing with IDE run configurations.
         if (argc == 1) {
-            const std::string input  = "test_1.png";  // expected in working directory
-            const std::string output = "out.png";
+            const std::string input = "test_1.png";
 
             if (!std::filesystem::exists(input)) {
                 std::cerr
-                    << "ERROR: no arguments provided and default input file not found.\n"
-                    << "Searched for: " << std::filesystem::absolute(input).string() << "\n\n";
-                print_usage(std::cerr);
+                    << "ERROR: default test image not found.\n"
+                    << "Expected: " << std::filesystem::absolute(input).string() << "\n";
                 return 2;
             }
 
-            // Default parameters for a quick test
-            const int out_w = 896;
-            const int out_h = 896;
+            // Fixed experimental setup (reproducible)
             const ResizeMethod method = ResizeMethod::Bilinear;
-            const Backend backend = Backend::OpenMP;
-            const int threads = 12; // set 0 to let OpenMP decide
+            const int threads = 12;
 
-            Image img = load_image(input, 0);
-            Image out = resize(img, out_w, out_h, method, backend, threads);
+            // ---------- 1) Correctness test ----------
+            {
+                std::cout << "\n=== VALIDATION TEST ===\n";
 
-            // Choose output writer based on extension
-            if (ends_with_icase(output, ".jpg") || ends_with_icase(output, ".jpeg")) {
-                save_jpg(out, output, cfg::default_jpg_quality);
-            } else {
-                save_png(out, output, cfg::default_png_compression);
+                const int out_w = 896;
+                const int out_h = 896;
+
+                Image img = load_image(input, 0);
+                Image out_seq = resize(img, out_w, out_h, method, Backend::Sequential, 0);
+                Image out_omp = resize(img, out_w, out_h, method, Backend::OpenMP, threads);
+
+                DiffStats d = compare_images(out_seq, out_omp);
+
+                std::cout
+                    << "different_values = " << d.different_values << "\n"
+                    << "max_abs_diff     = " << d.max_abs_diff << "\n";
+
+                if (d.different_values != 0) {
+                    std::cerr << "VALIDATION FAILED\n";
+                    return 3;
+                }
+
+                std::cout << "VALIDATION PASSED\n";
             }
 
-            std::cout << "OK (default run): " << input << " -> " << output
-                      << " (" << out.width << "x" << out.height << "x" << out.channels << ")\n";
+            // ---------- 2) Benchmark sweep ----------
+            std::cout << "\n=== BENCHMARK SWEEP ===\n";
+
+            const int base_w = 512;
+            const int base_h = 512;
+            const int steps  = 6;
+            const double scale = 1.5;
+            const int warmup = 2;
+            const int runs   = 20;
+
+            Image img = load_image(input, 0);
+
+            int w = base_w;
+            int h = base_h;
+
+            const std::string header =
+                "backend,out_w,out_h,channels,mean_ms,stddev_ms,min_ms,max_ms";
+
+            for (int i = 0; i < steps; ++i) {
+                // Sequential
+                {
+                    BenchResult r = benchmark_resize(
+                        img, w, h,
+                        method, Backend::Sequential, 0,
+                        warmup, runs
+                    );
+
+                    append_csv_row(
+                        "bench_seq.csv",
+                        header,
+                        "seq," + std::to_string(w) + "," + std::to_string(h) + "," +
+                        std::to_string(img.channels) + "," +
+                        std::to_string(r.mean_ms) + "," +
+                        std::to_string(r.stddev_ms) + "," +
+                        std::to_string(r.min_ms) + "," +
+                        std::to_string(r.max_ms)
+                    );
+                }
+
+                // OpenMP
+                {
+                    BenchResult r = benchmark_resize(
+                        img, w, h,
+                        method, Backend::OpenMP, threads,
+                        warmup, runs
+                    );
+
+                    append_csv_row(
+                        "bench_omp.csv",
+                        header,
+                        "omp," + std::to_string(w) + "," + std::to_string(h) + "," +
+                        std::to_string(img.channels) + "," +
+                        std::to_string(r.mean_ms) + "," +
+                        std::to_string(r.stddev_ms) + "," +
+                        std::to_string(r.min_ms) + "," +
+                        std::to_string(r.max_ms)
+                    );
+                }
+
+                w = static_cast<int>(std::round(w * scale));
+                h = static_cast<int>(std::round(h * scale));
+            }
+
+            std::cout << "\nEXPERIMENT COMPLETED\n";
+            std::cout << "CSV files generated: bench_seq.csv, bench_omp.csv\n";
+
             return 0;
         }
 

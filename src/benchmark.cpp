@@ -30,43 +30,47 @@ static double stddev_sample(const std::vector<double>& v, double mu) {
 }
 
 BenchResult benchmark_resize(
-    const Image& input,
+    const Image& img,
     int out_w, int out_h,
     ResizeMethod method,
     Backend backend,
     int threads,
-    int warmup_runs,
-    int measured_runs
+    int warmup,
+    int runs,
+    int inner_reps
 ) {
-    if (input.empty()) throw std::invalid_argument("benchmark_resize: input image is empty");
-    if (out_w <= 0 || out_h <= 0) throw std::invalid_argument("benchmark_resize: invalid output size");
-    if (warmup_runs < 0 || measured_runs <= 0) throw std::invalid_argument("benchmark_resize: invalid runs");
+    if (inner_reps <= 0) inner_reps = 1;
 
-    // Warmup (cache, JIT-like effects, alloc patterns)
-    for (int i = 0; i < warmup_runs; ++i) {
-        volatile auto tmp = resize(input, out_w, out_h, method, backend, threads);
-        (void)tmp;
+    std::vector<double> samples;
+    samples.reserve(runs);
+
+    // Warmup
+    for (int i = 0; i < warmup; ++i) {
+        for (int k = 0; k < inner_reps; ++k) {
+            Image out = resize(img, out_w, out_h, method, backend, threads);
+        }
     }
 
-    std::vector<double> times;
-    times.reserve(static_cast<size_t>(measured_runs));
+    // Measured runs
+    for (int i = 0; i < runs; ++i) {
+        const double t0 = now_ms();
 
-    for (int i = 0; i < measured_runs; ++i) {
-        double t = time_ms([&]() {
-            volatile auto out = resize(input, out_w, out_h, method, backend, threads);
-            (void)out;
-        });
-        times.push_back(t);
+        for (int k = 0; k < inner_reps; ++k) {
+            Image out = resize(img, out_w, out_h, method, backend, threads);
+        }
+
+        const double t1 = now_ms();
+        const double elapsed = (t1 - t0) / inner_reps;  // normalize
+        samples.push_back(elapsed);
     }
 
-    std::sort(times.begin(), times.end());
+    BenchResult r{};
+    r.runs = runs;
+    r.mean_ms   = mean(samples);
+    r.stddev_ms = stddev(samples, r.mean_ms);
+    r.min_ms    = *std::min_element(samples.begin(), samples.end());
+    r.max_ms    = *std::max_element(samples.begin(), samples.end());
 
-    BenchResult r;
-    r.runs = measured_runs;
-    r.min_ms = times.front();
-    r.max_ms = times.back();
-    r.mean_ms = mean(times);
-    r.stddev_ms = stddev_sample(times, r.mean_ms);
     return r;
 }
 
